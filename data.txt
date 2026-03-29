@@ -1,0 +1,5 @@
+1,PRODUCTIVE,120,learned sorting algorithms
+2,LEISURE,45,watching a show
+3,PRODUCTIVE,100,learning java
+4,LEISURE,90,youtube
+5,OTHER,40,bath
