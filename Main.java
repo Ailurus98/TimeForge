@@ -1,11 +1,14 @@
 import java.io.*;
 import java.util.Scanner;
+import java.util.ArrayList;
 
 public class Main {
     static TrackerService tracker = new TrackerService();
+    static int userAge = -1;
 
     public static void main(String[] args) {
         loadData();
+        loadAge();
         
         System.out.println("=================================");
         System.out.println("    Welcome to Time Tracker      ");
@@ -13,6 +16,9 @@ public class Main {
         System.out.println("Available Commands:");
         System.out.println(" -> add <PRODUCTIVE|LEISURE|OTHER> <MINUTES> <TASK>");
         System.out.println(" -> summary");
+        System.out.println(" -> insights");
+        System.out.println(" -> life");
+        System.out.println(" -> life now");
         System.out.println(" -> exit");
         System.out.println("---------------------------------");
         
@@ -20,7 +26,7 @@ public class Main {
         while (true) {
             System.out.print("\nEnter command: ");
             if(!sc.hasNextLine()) break;
-            String line = sc.nextLine();
+            String line = sc.nextLine().trim();
             if(line.equals("")) continue;
             
             String[] words = line.split(" ");
@@ -41,8 +47,18 @@ public class Main {
                     tracker.addSession(m, mins, task.trim());
                     saveData();
                     System.out.println("Successfully logged " + mins + " minutes for " + m + ".");
+                    
+                    ArrayList<Insight> ins = InsightService.getInsights(tracker.history);
+                    if(!ins.isEmpty()) {
+                        System.out.println("\n[!] New Insights Available: ");
+                        for(Insight in : ins) {
+                            if(in.severity != Insight.Severity.INFO) {
+                                System.out.println(in.toString());
+                            }
+                        }
+                    }
                 } catch(Exception e) { System.out.println("Error formatting! Use: add MODE MINUTES TASK"); }
-            } else if (cmd.equals("today") || cmd.equals("week") || cmd.equals("summary")) {
+            } else if (line.equals("today") || line.equals("week") || line.equals("summary")) {
                 int pTime = 0; int lTime = 0; int oTime = 0;
                 for (int i=0; i<tracker.history.size(); i++) {
                     Session s = tracker.history.get(i);
@@ -55,10 +71,60 @@ public class Main {
                 System.out.println("Productive: " + (pTime/60) + "h " + (pTime%60) + "m");
                 System.out.println("Leisure: " + (lTime/60) + "h " + (lTime%60) + "m");
                 if (oTime > 0) System.out.println("Other: " + (oTime/60) + "h " + (oTime%60) + "m");
+            } else if (line.startsWith("life")) {
+                if (userAge <= 0) {
+                    System.out.print("What is your age? ");
+                    try {
+                        userAge = Integer.parseInt(sc.nextLine().trim());
+                        PrintWriter pw = new PrintWriter("profile.txt");
+                        pw.println(userAge);
+                        pw.close();
+                    } catch(Exception e) {
+                        System.out.println("Invalid age. Try again next time.");
+                        continue;
+                    }
+                }
+                
+                int pTime = 0; int lTime = 0;
+                for (Session s : tracker.history) {
+                    if(s.mode == Mode.PRODUCTIVE) pTime += s.durationMinutes;
+                    if(s.mode == Mode.LEISURE) lTime += s.durationMinutes;
+                }
+
+                if(line.equals("life now")) {
+                    System.out.println("\n--- LOGGED TOTALS ---");
+                    System.out.println("Productive: " + (pTime/60) + "h " + (pTime%60) + "m");
+                    System.out.println("Leisure: " + (lTime/60) + "h " + (lTime%60) + "m");
+
+                    System.out.println("\n--- INSIGHTS ---");
+                    ArrayList<Insight> ins = InsightService.getInsights(tracker.history);
+                    if(ins.isEmpty()) System.out.println("No insights yet.");
+                    for(Insight in : ins) {
+                        System.out.println(in.toString());
+                    }
+                }
+
+                System.out.println("\n--- LIFE PROGRESS ---");
+                LifeService.printLifeMatrix(userAge, pTime, lTime);
+            } else if (cmd.equals("insights")) {
+                System.out.println("\n--- INSIGHTS ---");
+                ArrayList<Insight> ins = InsightService.getInsights(tracker.history);
+                if(ins.isEmpty()) System.out.println("No insights yet.");
+                for(Insight in : ins) {
+                    System.out.println(in.toString());
+                }
             } else {
                 System.out.println("Unknown command! Type 'add', 'summary', or 'exit'.");
             }
         }
+    }
+
+    public static void loadAge() {
+        try {
+            Scanner s = new Scanner(new File("profile.txt"));
+            userAge = s.nextInt();
+            s.close();
+        } catch(Exception e) {}
     }
 
     public static void loadData() {
@@ -73,7 +139,7 @@ public class Main {
                 tracker.nextId = s.id + 1;
             }
             fSc.close();
-        } catch(Exception e) { System.out.println("Could not parse old data, starting fresh cache."); }
+        } catch(Exception e) { }
     }
 
     public static void saveData() {

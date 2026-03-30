@@ -3,3 +3,6 @@
 3,PRODUCTIVE,100,learning java
 4,LEISURE,90,youtube
 5,OTHER,40,bath
+6,PRODUCTIVE,100,learning java
+7,LEISURE,90,youtube
+8,OTHER,40,bath
