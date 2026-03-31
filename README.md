@@ -1,4 +1,4 @@
-# Time Tracker & Life Analytics ⏳
+# TimeForge
 
 A minimalist, pure-Java CLI application designed to track your daily productive vs. leisure time and provide deep psychological insights into your life's progress and habits.
 
